@@ -236,7 +236,7 @@ class Mat4 {
             {up.x,    up.y,    up.z,    0},
             {-dir.x,  -dir.y,  -dir.z,  0},
             {0,       0,       0,       1}
-        }}}, mat2 = translate(-pos);
+        }}}, mat2 = viewTranslate(pos);
         return mat1 * mat2;
     }
     float* glPtr() {
