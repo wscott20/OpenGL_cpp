@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 #include <variant>
-#define pi 3.14159f //approximate pi
+#define pi 3.14159f //approximately pi
 enum Axis {X,Y,Z};
 enum Angle {Rad,Deg};
 #define sq(n) (n*n)
