@@ -34,6 +34,7 @@ bool get_key(GLFWwindow *window, string key) {
         {"right",GLFW_KEY_RIGHT},
         {"up",GLFW_KEY_UP},
         {"down",GLFW_KEY_DOWN},
+        {"esc",GLFW_KEY_ESCAPE},
         //add more later
     };
     return key_map.find(key) != key_map.end() && glfwGetKey(window,key_map[key]);

@@ -1,4 +1,4 @@
-#include "OpenGL_utils.hpp"
+#include "OpenGL_input.hpp"
 #include "Camera.hpp"
 #include "Light.hpp"
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -45,37 +45,33 @@ int main() {
     //Model model{shader,{sphere},Mat4::identity(),"model"};
     model.setTexture("../img.jpeg");
     while (!glfwWindowShouldClose(window)) {
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        if (get_key(window,"q"))
             translate = Mat4::viewTranslate({0,-.1,0}) * translate;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        if (get_key(window,"e"))
             translate = Mat4::viewTranslate({0,.1,0}) * translate;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        if (get_key(window,"w"))
             translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({0,0,-.1}))) * translate;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        if (get_key(window,"s"))
             translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({0,0,.1}))) * translate;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        if (get_key(window,"d"))
             translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({.1,0,0}))) * translate;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        if (get_key(window,"a"))
             translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({-.1,0,0}))) * translate;
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, GL_TRUE);  //set the window to close
-        if (glfwGetKey(window, GLFW_KEY_I))
-            model.transform[1][3] += .1;
-        if (glfwGetKey(window, GLFW_KEY_K))
-            model.transform[1][3] -= .1;
-        if (glfwGetKey(window, GLFW_KEY_UP)){
+        if (get_key(window,"esc"))
+            glfwSetWindowShouldClose(window, true);  //set the window to close
+        if (get_key(window, "up")){
             auto rotateMat = Mat4::rotate(-1,X,Deg);;
             rotateX *= rotateMat;
         }
-        if (glfwGetKey(window, GLFW_KEY_DOWN)){
+        if (get_key(window, "down")){
             auto rotateMat = Mat4::rotate(1,X,Deg);;
             rotateX *= rotateMat;
         }
-        if (glfwGetKey(window, GLFW_KEY_RIGHT)){
+        if (get_key(window, "right")){
             auto rotateMat = Mat4::rotate(1,Y,Deg);
             rotateY *= rotateMat;
         }
-        if (glfwGetKey(window, GLFW_KEY_LEFT)){
+        if (get_key(window, "left")){
             auto rotateMat = Mat4::rotate(-1,Y,Deg);
             rotateY *= rotateMat;
         }
