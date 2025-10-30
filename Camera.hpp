@@ -1,27 +1,29 @@
-#ifndef camera_hpp
-#define camera_hpp
-#include "OpenGL_math.hpp"
+#pragma once
+#include "glm_header.hpp"
+#include "OpenGL_utils.hpp"
 class Camera {
-    cstr viewName,projName;
-    float fov;
-    Shader shader;
     public:
-    Mat4 view, proj;
-    Vec3 up, right, position, target;
-    Camera(Shader s, cstr vn, cstr pn, Vec3 pos, float fovy, Vec3 upV, Vec3 rightV, Vec3 tg): shader{s}, position{pos}, viewName{vn}, projName{pn}, fov{fovy}, up{upV}, right{rightV}, target{tg} {
-        view = Mat4::lookAt(up,right,(target-pos).normalize(),pos);
-        proj = Mat4::perspective(fov,1,.1,100);
+    float pitch, yaw;
+    vec3 position, up, front;
+    mat4 view, proj; //glm::mat4
+    Shader shader;
+    cstr viewName, projName;
+    Camera(Shader s, cstr vName, cstr pName, vec3 pos, float fov, vec3 upV, vec3 target, float aspect): shader{s}, viewName{vName}, projName{pName}, position{pos}, up{upV} {
+        vec3 direction = glm::normalize(target - position);
+        yaw = atan2f(direction.z, direction.x);
+        float dist_xz = sqrtf(direction.x * direction.x + direction.z * direction.z);
+        pitch = atan2f(direction.y, dist_xz);
+        proj = glm::perspective(fov, aspect, 0.1f, 100.f);
+        shader.setUniform(viewName,view);
         shader.setUniform(projName,proj);
     }
     void update() {
+        vec3 f;
+        f.x = cosf(pitch) * cosf(yaw);
+        f.y = sinf(pitch);
+        f.z = cosf(pitch) * sinf(yaw);
+        front = glm::normalize(f);
+        view = glm::lookAt(position, position + front, up);
         shader.setUniform(viewName,view);
     }
-    void rotate(Mat4 rotation) {
-        view *= rotation;
-    }
-    void rotate(float angle, Axis axis, Angle angle_type) {
-        Mat4 rotation = Mat4::rotate(angle,axis,angle_type);
-        view *= rotation;
-    }
 };
-#endif

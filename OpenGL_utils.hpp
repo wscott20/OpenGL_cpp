@@ -1,5 +1,4 @@
-#ifndef OpenGL_utils
-#define OpenGL_utils
+#pragma once
 #include "glad/include/glad.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define GL_SILENCE_DEPRECATION
@@ -8,7 +7,7 @@
 #include <iostream>
 #include <vector>
 #include "readFile.hpp"
-#include "OpenGL_math.hpp"
+#include "glm_header.hpp"
 using cstr = const char*;
 using uint = unsigned int;
 using uchar = unsigned char;
@@ -80,22 +79,22 @@ class Shader {
         glUniform1f(loc,value);
         return true;
     }
-    bool setUniform(cstr name, Vec2 value) {
+    bool setUniform(cstr name, vec2 value) {
         int loc = glGetUniformLocation(program,name);
         if (loc == -1) return false;
         glUniform2f(loc,value.x,value.y);
         return true;
     }
-    bool setUniform(cstr name, Vec3 value) {
+    bool setUniform(cstr name, vec3 value) {
         int loc = glGetUniformLocation(program,name);
         if (loc == -1) return false;
         glUniform3f(loc,value.x,value.y,value.z);
         return true;
     }
-    bool setUniform(cstr name, Mat4 value) {
+    bool setUniform(cstr name, mat4 value) {
         int loc = glGetUniformLocation(program,name);
         if (loc == -1) return false;
-        glUniformMatrix4fv(loc,1,GL_FALSE,value.glPtr());
+        glUniformMatrix4fv(loc,1,GL_FALSE,glm::value_ptr(value));
         return true;
     }
 };
@@ -164,31 +163,32 @@ class Texture {
     }
 };
 struct Mesh {
-    std::vector<Vec3> positions,colors,normals;
-    std::vector<Vec2> texcoords;
+    std::vector<vec3> positions,normals;
+    std::vector<vec4> colors;
+    std::vector<vec2> texcoords;
     std::vector<uint> indices;
-    int vCount,iCount; //vertex count and index count
-    Mesh(int vertexCount,int indexCount): vCount{vertexCount}, iCount{indexCount} {
+    int vCount, iCount; //vertex count and index count
+    Mesh(int vertexCount, int indexCount): vCount{vertexCount}, iCount{indexCount} {
         //initializes vec values to 0
-        positions = std::vector<Vec3>(vCount);
-        colors = std::vector<Vec3>(vCount);
-        normals = std::vector<Vec3>(vCount);
-        texcoords = std::vector<Vec2>(vCount);
+        positions = std::vector<vec3>(vCount);
+        colors = std::vector<vec4>(vCount);
+        normals = std::vector<vec3>(vCount);
+        texcoords = std::vector<vec2>(vCount);
         indices = std::vector<uint>(iCount);
     }
-    void setPositions(std::vector<Vec3> coords) {
+    void setPositions(std::vector<vec3> coords) {
         for (int i = 0; i < vCount; i++)
             positions[i]=coords[i];
     }
-    void setColors(std::vector<Vec3> cols) {
+    void setColors(std::vector<vec4> cols) {
         for (int i = 0; i < vCount; i++)
             colors[i]=cols[i];
     }
-    void setNorms(std::vector<Vec3> norms) {
+    void setNorms(std::vector<vec3> norms) {
         for (int i = 0; i < vCount; i++)
             normals[i]=norms[i];
     }
-    void setTexCoords(std::vector<Vec2> coords) {
+    void setTexCoords(std::vector<vec2> coords) {
         for (int i = 0; i < vCount; i++)
             texcoords[i]=coords[i];
     }
@@ -201,51 +201,57 @@ struct Mesh {
         std::vector<float> data = {};
         for (int i = 0; i < vCount; i++) {
             data.insert(data.end(),{positions[i].x,positions[i].y,positions[i].z});
-            data.insert(data.end(),{colors[i].x,colors[i].y,colors[i].z});
+            data.insert(data.end(),{colors[i].x,colors[i].y,colors[i].z,colors[i].w});
             data.insert(data.end(),{normals[i].x,normals[i].y,normals[i].z});
             data.insert(data.end(),{texcoords[i].x,texcoords[i].y});
         }
         float* verts = data.data();
         bo.data(verts,indices.data(),vCount * 11 * sizeof(float),iCount*sizeof(uint));
-        //sometimes might have to sometimes set buffer data multiple times but only attrib once
+        //sometimes might have to set buffer data multiple times but only attrib once
         if (attrib) {
-            bo.attrib(0,3,11,0); //11 for vec3 position vec3 color vec3 normal vec2 texcoord
-            bo.attrib(1,3,11,3);
-            bo.attrib(2,3,11,6);
-            bo.attrib(3,2,11,9);
+            bo.attrib(0,3,12,0); //12 for vec3 position vec4 color vec3 normal vec2 texcoord
+            bo.attrib(1,4,12,3);
+            bo.attrib(2,3,12,7);
+            bo.attrib(3,2,12,10);
         }
         return data;
     }
 };
-Mesh genCube(BufferObj bo, float width, float height, float length, Vec3 color={1,1,1}) {
-    std::vector<Vec3> positions = {
+Mesh genCube(BufferObj bo, float width, float height, float length, vec4 color={1,1,1,1}) {
+    std::vector<vec3> positions = {
+        //front
         {-.5,  .5,  .5},
         {-.5, -.5,  .5},
         { .5, -.5,  .5},
         { .5,  .5,  .5},
+        //back
         { .5,  .5, -.5},
         { .5, -.5, -.5},
         {-.5, -.5, -.5},
         {-.5,  .5, -.5},
+        //top
         { .5,  .5,  .5},
         { .5,  .5, -.5},
         {-.5,  .5, -.5},
         {-.5,  .5,  .5},
+        //bottom
         { .5, -.5,  .5},
         { .5, -.5, -.5},
         {-.5, -.5, -.5},
         {-.5, -.5,  .5},
+        //right
         { .5,  .5,  .5},
         { .5, -.5,  .5},
         { .5, -.5, -.5},
         { .5,  .5, -.5},
+        //left
         {-.5,  .5, -.5},
         {-.5, -.5, -.5},
         {-.5, -.5,  .5},
         {-.5,  .5,  .5}
     };
-    for(auto& pos: positions) pos *= Vec3{width,height,length};
-    Vec3 initNorms[] = {
+    for(auto& pos: positions) pos *= vec3{width,height,length};
+    vec3 initNorms[] = {
         {0,0,1},
         {0,0,-1},
         {0,1,0},
@@ -253,26 +259,37 @@ Mesh genCube(BufferObj bo, float width, float height, float length, Vec3 color={
         {1,0,0},
         {-1,0,0}
     };
-    std::vector<Vec3> norms(24);
+    std::vector<vec3> norms(24);
     for (int i = 0; i < 6; i++)
         for (int j = 0; j < 4; j++)
             norms[i*4+j] = initNorms[i];
-    std::vector<Vec3> colors(24,color);
-    Vec2 initTexcoords[] = {
+    //std::vector<vec4> colors(24,color);
+    std::vector<vec4> colors = { //temporarily using different colors for each face for now to debug
+        {1,0,0,1}, {1,0,0,1}, {1,0,0,1}, {1,0,0,1},
+        {0,1,0,1}, {0,1,0,1}, {0,1,0,1}, {0,1,0,1},
+        {0,0,1,1}, {0,0,1,1}, {0,0,1,1}, {0,0,1,1},
+        {1,1,0,1}, {1,1,0,1}, {1,1,0,1}, {1,1,0,1},
+        {1,0,1,1}, {1,0,1,1}, {1,0,1,1}, {1,0,1,1},
+        {0,1,1,1}, {0,1,1,1}, {0,1,1,1}, {0,1,1,1}
+    };
+    vec2 initTexcoords[] = {
         {1,1},
         {1,0},
         {0,0},
         {0,1}
     };
-    std::vector<Vec2> texcoords(24);
+    std::vector<vec2> texcoords(24);
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 6; j++)
             texcoords[j*4+i] = initTexcoords[i];
-    std::vector<uint> indices(36);
-    for (int i = 0; i < 36; i+=6) {
-        uint faceInd[] = {0,1,2,0,2,3};
-        for (int j = 0; j < 6; j++)
-            indices[i+j] = faceInd[j] + (4 * i/6);
+    std::vector<uint> indices={};
+    uint faceInd[] = {0,1,2,0,2,3};
+    int n=0;
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 6; j++) {
+            indices.push_back(faceInd[j] + i*4);
+            n++;
+        }
     }
     Mesh cube{24,36};
     cube.setPositions(positions);
@@ -283,112 +300,3 @@ Mesh genCube(BufferObj bo, float width, float height, float length, Vec3 color={
     cube.vData(bo);
     return cube;
 }
-Mesh genSphere(BufferObj bo, float radius, int latLines, int lonLines, Vec3 color=Vec3{1,1,1}) {
-    std::vector<Vec3> positions={};
-    std::vector<Vec3> colors={};
-    std::vector<Vec3> norms={};
-    std::vector<Vec2> texcoords={};
-    std::vector<uint> indices={};
-    Vec3 og{0,0,radius}; //original vector to be rotated
-    int index=0;
-    for (int i = 0; i < latLines; i++) {
-        for (int j = 0; j < lonLines; j++) {
-            float latAngle = 180/latLines * i - 90,
-                  nextLat  = 180/latLines * (i+1) - 90,
-                  lonAngle = 360/lonLines * j,
-                  nextLon  = 360/lonLines * (j+1);
-            if (i == 0) {
-                Vec3 p1 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(latAngle,X,Deg) * Mat4::translate(og)),
-                     p2 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(nextLat,X,Deg) * Mat4::translate(og)),
-                     p3 = Mat4Vec3(Mat4::rotate(nextLon,Y,Deg) * Mat4::rotate(nextLat,X,Deg) * Mat4::translate(og)),
-                     norm = Vec3::cross(p1-p2,p1-p3);
-                positions.push_back(p1);
-                positions.push_back(p2);
-                positions.push_back(p3);
-                uint inds[] = {0,1,2};
-                for (uint ind: inds) {
-                    indices.push_back(ind + index);
-                    colors.push_back(color);
-                    norms.push_back(norm.normalize());
-                }
-                texcoords.push_back({.5,1}); //idk what else to use for texcoords on just a triangle
-                texcoords.push_back({0,0});
-                texcoords.push_back({0,1});
-                index += 3;
-            } else if (i == latLines-1) {
-                Vec3 p1 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(latAngle,X,Deg) * Mat4::translate(og)),
-                     p2 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(nextLat,X,Deg) * Mat4::translate(og)),
-                     p3 = Mat4Vec3(Mat4::rotate(nextLon,Y,Deg) * Mat4::rotate(latAngle,X,Deg) * Mat4::translate(og)),
-                     norm = Vec3::cross(p1-p2,p1-p3);
-                positions.push_back(p1);
-                positions.push_back(p2);
-                positions.push_back(p3);
-                uint inds[] = {0,1,2};
-                for (uint ind: inds) {
-                    indices.push_back(ind + index);
-                    colors.push_back(color);
-                    norms.push_back(norm.normalize());
-                }
-                texcoords.push_back({1,0});
-                texcoords.push_back({.5,0});
-                texcoords.push_back({1,1});
-                index += 3;
-            } else {
-                Vec3 p1 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(latAngle,X,Deg) * Mat4::translate(og)),
-                     p2 = Mat4Vec3(Mat4::rotate(lonAngle,Y,Deg) * Mat4::rotate(nextLat,X,Deg) * Mat4::translate(og)),
-                     p3 = Mat4Vec3(Mat4::rotate(nextLon,Y,Deg) * Mat4::rotate(nextLat,X,Deg) * Mat4::translate(og)),
-                     p4 = Mat4Vec3(Mat4::rotate(nextLon,Y,Deg) * Mat4::rotate(latAngle,X,Deg) * Mat4::translate(og)),
-                     norm = Vec3::cross(p1-p2,p1-p3);
-                positions.push_back(p1);
-                positions.push_back(p2);
-                positions.push_back(p3);
-                positions.push_back(p4);
-                uint inds[] = {0,1,2,0,2,3};
-                for (uint ind: inds)
-                    indices.push_back(ind + index);
-                for (int k = 0; k < 4; k++) {
-                    colors.push_back(color);
-                    norms.push_back(norm.normalize());
-                }
-                texcoords.push_back({1,0});
-                texcoords.push_back({0,0});
-                texcoords.push_back({0,1});
-                texcoords.push_back({1,1});
-                index += 4;
-            }
-        }
-    }
-    Mesh sphere{(int)positions.size(),(int)indices.size()};
-    sphere.setPositions(positions);
-    sphere.setColors(colors);
-    sphere.setNorms(norms);
-    sphere.setTexCoords(texcoords);
-    sphere.setIndices(indices);
-    sphere.vData(bo);
-    return sphere;
-}
-struct Model {
-    cstr locName;
-    std::vector<Mesh> meshes;
-    Mat4 transform;
-    Texture texture;
-    Shader shader;
-    Model(Shader s,std::vector<Mesh> meshArr,Mat4 transformMat,cstr name): shader{s}, meshes{meshArr}, transform{transformMat}, locName{name} {
-        shader.setUniform(locName,transform);
-    }
-    void setTexture(cstr filename) {
-        texture.data(shader);
-        texture.loadData(filename);
-    }
-    void updateTransform() {
-        shader.setUniform(locName,transform);
-    }
-    void draw(BufferObj bo, bool multi=false) {
-        updateTransform();
-        for (auto mesh: meshes) {
-            if(multi) mesh.vData(bo,false); //might have to update buffer data when drawing multiple meshes/models
-            glDrawElements(GL_TRIANGLES, mesh.iCount, GL_UNSIGNED_INT, 0);
-        }
-    }
-};
-#endif

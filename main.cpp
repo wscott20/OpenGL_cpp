@@ -33,54 +33,54 @@ int main() {
     }
     shader.use();
     shader.setUniform("useTex",0);
-    Mesh cube = genCube(bObj,10,.10,10);
-    Model model{shader,{cube},Mat4::identity(),"model"};
-    Mat4 rotateX = Mat4::identity(),
-         rotateY = Mat4::identity(),
-         translate = Mat4::identity();
-    Camera cam{shader,"view","proj",Vec3{0,0,5},pi/4,Vec3{0,1,0},Vec3{1,0,0},Vec3{0,0,0}};
+    Mesh cube = genCube(bObj,1,1,1,{1,0,0,.5});
+    Camera cam(shader,"view","proj",vec3{0,1,5},pi/4,vec3{0,1,0},vec3{0,0,0},1);
     shader.setUniform("numLights",1);
-    Light test = Light::spot("lights[0]",shader,{0,3,0},{1,1,1},{0,-1,0},pi/4,1,.01,.01);
-    //Mesh sphere = genSphere(bObj,2,10,20);
-    //Model model{shader,{sphere},Mat4::identity(),"model"};
-    model.setTexture("../img.jpeg");
+    Light ambient = Light::ambient("lights[0]",shader,{1,1,1},1);
+    mat4 model = identity();
+    shader.setUniform("model",model);
+    glClearColor(.3,.3,.3,1);
     while (!glfwWindowShouldClose(window)) {
         if (get_key(window,"q"))
-            translate = Mat4::viewTranslate({0,-.1,0}) * translate;
+            cam.position.y += .1f;
         if (get_key(window,"e"))
-            translate = Mat4::viewTranslate({0,.1,0}) * translate;
-        if (get_key(window,"w"))
-            translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({0,0,-.1}))) * translate;
-        if (get_key(window,"s"))
-            translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({0,0,.1}))) * translate;
-        if (get_key(window,"d"))
-            translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({.1,0,0}))) * translate;
-        if (get_key(window,"a"))
-            translate = Mat4::viewTranslate(Mat4Vec3(rotateY.transpose()*Mat4::translate({-.1,0,0}))) * translate;
-        if (get_key(window,"esc"))
-            glfwSetWindowShouldClose(window, true);  //set the window to close
+            cam.position.y -= .1f;
+        if (get_key(window,"w")) {
+            vec3 forward = glm::normalize(vec3{cam.front.x,0,cam.front.z});
+            cam.position += forward * .1f;
+        }
+        if (get_key(window,"s")) {
+            vec3 backward = glm::normalize(vec3{cam.front.x,0,cam.front.z});
+            cam.position -= backward * .1f;
+        }
+        if (get_key(window,"d")) {
+            vec3 right = glm::normalize(glm::cross(cam.front, cam.up));
+            cam.position += right * .1f;
+        }
+        if (get_key(window,"a")) {
+            vec3 right = glm::normalize(glm::cross(cam.front, cam.up));
+            cam.position -= right * .1f;
+        }
         if (get_key(window, "up")){
-            auto rotateMat = Mat4::rotate(-1,X,Deg);;
-            rotateX *= rotateMat;
+            cam.pitch = std::min(cam.pitch + 0.02f, pi/2 - 0.01f);
         }
         if (get_key(window, "down")){
-            auto rotateMat = Mat4::rotate(1,X,Deg);;
-            rotateX *= rotateMat;
+            cam.pitch = std::max(cam.pitch - 0.02f, -pi/2 + 0.01f);
         }
         if (get_key(window, "right")){
-            auto rotateMat = Mat4::rotate(1,Y,Deg);
-            rotateY *= rotateMat;
+            cam.yaw += 0.02f;
+            cam.yaw = fmod(cam.yaw, 2 * pi);
         }
         if (get_key(window, "left")){
-            auto rotateMat = Mat4::rotate(-1,Y,Deg);
-            rotateY *= rotateMat;
+            cam.yaw -= 0.02f;
+            cam.yaw = fmod(cam.yaw, 2 * pi);
         }
-        cam.view = rotateX * rotateY * translate;
-        // test.update();
-        cam.update(); 
-        glClearColor(.3,.3,.3,1);
+        if (get_key(window,"esc"))
+            glfwSetWindowShouldClose(window, true);  //set the window to close
+        cam.update();
+        shader.setUniform("model",model);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        model.draw(bObj);
+        glDrawElements(GL_TRIANGLES, cube.iCount, GL_UNSIGNED_INT, 0);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

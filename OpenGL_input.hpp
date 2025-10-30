@@ -1,5 +1,4 @@
-#ifndef Opengl_input_hpp
-#define Opengl_input_hpp
+#pragma once
 #include <map>
 #include "OpenGL_utils.hpp"
 bool get_key(GLFWwindow *window, string key) {
@@ -39,4 +38,3 @@ bool get_key(GLFWwindow *window, string key) {
     };
     return key_map.find(key) != key_map.end() && glfwGetKey(window,key_map[key]);
 }
-#endif

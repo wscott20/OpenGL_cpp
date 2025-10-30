@@ -1,6 +1,5 @@
-#ifndef Light_hpp
-#define Light_hpp
-#include "OpenGL_math.hpp"
+#pragma once
+#include "glm_header.hpp"
 enum LightType {
     Directional=0,
     Point=1,
@@ -11,7 +10,7 @@ class Light {
     string locName;
     Shader shader;
     public:
-    Vec3 position,direction,color;
+    vec3 position,direction,color;
     LightType type;
     float intensity,constant,linear,quadratic,cutoff;
     Light(string name,Shader s): locName{name},shader{s} {}
@@ -27,7 +26,7 @@ class Light {
         shader.setUniform((locName + ".quadratic").c_str(),quadratic);
         shader.setUniform((locName + ".cutoff").c_str(),cutoff);
     }
-    static Light ambient(cstr name,Shader s,Vec3 color,float intensity) {
+    static Light ambient(cstr name,Shader s,vec3 color,float intensity) {
         Light light{name,s};
         light.color = color;
         light.intensity = intensity;
@@ -35,7 +34,7 @@ class Light {
         light.update();
         return light;
     }
-    static Light directional(cstr name,Shader s,Vec3 col,Vec3 dir) {
+    static Light directional(cstr name,Shader s,vec3 col,vec3 dir) {
         Light light{name,s};
         light.color = col;
         light.direction = dir;
@@ -43,7 +42,7 @@ class Light {
         light.update();
         return light;
     }
-    static Light point(cstr name,Shader s,Vec3 pos,Vec3 col,float cons,float lin,float quad) {
+    static Light point(cstr name,Shader s,vec3 pos,vec3 col,float cons,float lin,float quad) {
         Light light{name,s};
         light.position = pos;
         light.color = col;
@@ -54,7 +53,7 @@ class Light {
         light.update();
         return light;
     }
-    static Light spot(cstr name,Shader s,Vec3 pos,Vec3 col,Vec3 dir,float cutOff,float cons,float lin,float quad) {
+    static Light spot(cstr name,Shader s,vec3 pos,vec3 col,vec3 dir,float cutOff,float cons,float lin,float quad) {
         Light light{name,s};
         light.position = pos;
         light.color = col;
@@ -68,4 +67,3 @@ class Light {
         return light;
     }
 };
-#endif

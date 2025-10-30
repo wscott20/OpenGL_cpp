@@ -5,7 +5,7 @@
 #define Spot 3
 
 in vec3 fragPos;
-in vec3 fragColor;
+in vec4 fragColor;
 in vec3 norm;
 in vec2 texCoord;
 
@@ -64,6 +64,6 @@ void main() {
             default:break;
         }
     }
-    color = vec4(fragColor,1) * vec4(lightColor,1);
+    color = fragColor * vec4(lightColor,1);
     if (useTex) color *= texture(tex,texCoord); 
 }

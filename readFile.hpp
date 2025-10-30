@@ -1,5 +1,4 @@
-#ifndef read_file_hpp
-#define read_file_hpp
+#pragma once
 #include <fstream>
 #include <string>
 using std::string;
@@ -12,4 +11,3 @@ string readFile(string filename) {
     }
     return output;
 }
-#endif
