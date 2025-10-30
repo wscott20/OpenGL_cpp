@@ -1,6 +1,5 @@
 #include "OpenGL_input.hpp"
 #include "Camera.hpp"
-#include "Light.hpp"
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -33,17 +32,43 @@ int main() {
     }
     shader.use();
     shader.setUniform("useTex",0);
-    Mesh cube = genCube(bObj,10,.10,10);
-    Model model{shader,{cube},Mat4::identity(),"model"};
+    Mesh heightmap{121,600};
+    std::vector<Vec3> verts={},colors={},norms={};
+    std::vector<Vec2> tc={};
+    std::vector<uint> indices={};
+    for (int x=0;x<=10;x++) {
+        for (int z=0;z<=10;z++) {
+            uint inds[]={
+                z*11+x+1,
+                (z+1)*11+x+1,
+                (z+1)*11+x,
+                z*11+x+1,
+                (z+1)*11+x,
+                z*11+x,
+            };
+            if(x<10&&z<10)
+                for(auto ind:inds)
+                    indices.push_back(ind);
+            Vec3 vert={x*10-50,0,z*10-50};
+            verts.push_back(vert);
+            Vec3 c={1,1,1},n={0,1,0};
+            colors.push_back(c);
+            norms.push_back(n);
+            Vec2 texc={0,0};
+            tc.push_back(texc);
+        }
+    }
+    heightmap.setPositions(verts);
+    heightmap.setIndices(indices);
+    heightmap.setTexCoords(tc);
+    heightmap.setColors(colors);
+    heightmap.setNorms(norms);
+    Model model{shader,{heightmap},Mat4::identity(),"model"};
     Mat4 rotateX = Mat4::identity(),
          rotateY = Mat4::identity(),
          translate = Mat4::identity();
     Camera cam{shader,"view","proj",Vec3{0,0,5},pi/4,Vec3{0,1,0},Vec3{1,0,0},Vec3{0,0,0}};
-    shader.setUniform("numLights",1);
-    Light test = Light::spot("lights[0]",shader,{0,3,0},{1,1,1},{0,-1,0},pi/4,1,.01,.01);
-    //Mesh sphere = genSphere(bObj,2,10,20);
-    //Model model{shader,{sphere},Mat4::identity(),"model"};
-    model.setTexture("../img.jpeg");
+    //model.setTexture("../img.jpeg");
     while (!glfwWindowShouldClose(window)) {
         if (get_key(window,"q"))
             translate = Mat4::viewTranslate({0,-.1,0}) * translate;
@@ -76,7 +101,6 @@ int main() {
             rotateY *= rotateMat;
         }
         cam.view = rotateX * rotateY * translate;
-        // test.update();
         cam.update(); 
         glClearColor(.3,.3,.3,1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
