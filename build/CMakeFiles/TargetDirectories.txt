@@ -1,0 +1,6 @@
+/home/wscott20/learnopengl/build/CMakeFiles/learnopengl.dir
+/home/wscott20/learnopengl/build/CMakeFiles/edit_cache.dir
+/home/wscott20/learnopengl/build/CMakeFiles/rebuild_cache.dir
+/home/wscott20/learnopengl/build/glad/CMakeFiles/glad.dir
+/home/wscott20/learnopengl/build/glad/CMakeFiles/edit_cache.dir
+/home/wscott20/learnopengl/build/glad/CMakeFiles/rebuild_cache.dir
