@@ -29,6 +29,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "Failed to create GLFW window\n";
@@ -132,6 +133,7 @@ int main() {
     cube.material.shininess = 32.0f;
     cube.setupMesh(sp);*/
     Model cube = loadModel("brick.obj");
+    cube.meshes[0].setupMesh(sp);
 
 //light setup
     glUseProgram(sp);
@@ -147,7 +149,7 @@ int main() {
     uint lightOuterCutOffLoc = glGetUniformLocation(sp, "light.outerCutOff");
     glUniform1f(lightOuterCutOffLoc, glm::cos(glm::radians(20.f)));
     uint lightAmbientLoc = glGetUniformLocation(sp, "light.ambient");
-    glUniform3f(lightAmbientLoc, 0.1f, 0.1f, 0.1f);
+    glUniform3f(lightAmbientLoc, 0.5f, 0.5f, 0.5f);
     uint lightDiffuseLoc = glGetUniformLocation(sp, "light.diffuse");
     glUniform3f(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
     uint lightSpecularLoc = glGetUniformLocation(sp, "light.specular");

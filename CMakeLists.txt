@@ -23,9 +23,13 @@ target_link_libraries(learnopengl PRIVATE
     glfw
     glad
     assimp::assimp
-    X11
-    pthread
-    Xrandr
-    Xi
-    dl
 )
+if(UNIX AND NOT APPLE)
+    target_link_libraries(learnopengl PRIVATE
+        X11
+        pthread
+        Xrandr
+        Xi
+        dl
+    )
+endif()
