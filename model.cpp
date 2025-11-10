@@ -56,6 +56,9 @@ Mesh processMesh(aiMesh* mesh, const aiScene* scene) {
         aiString str;
         if (material->GetTexture(aiTextureType_DIFFUSE, 0, &str) == AI_SUCCESS)
             mat.diffuse = loadTexture(str.C_Str());
+        if (material->GetTexture(aiTextureType_SPECULAR, 0, &str) == AI_SUCCESS)
+            mat.specular = loadTexture(str.C_Str());
+        material->Get(AI_MATKEY_SHININESS, mat.shininess);
     }
     return Mesh(vertices, indices, mat);
 }

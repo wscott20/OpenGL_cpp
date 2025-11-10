@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "material.hpp"
+#include "shader.hpp"
 #include <vector>
 struct Vertex {
     glm::vec3 position;
@@ -14,7 +15,8 @@ struct Mesh {
     uint vao, vbo, ebo;
     Mesh(std::vector<Vertex> verts, std::vector<uint> inds);
     Mesh(std::vector<Vertex> verts, std::vector<uint> inds, Material mat);
-    void setupMesh(uint shaderProgram);
+    void setupMesh();
+    void setupMaterial(Shader shader);
     void draw();
 };
 Mesh genCube(float width, float height, float depth);

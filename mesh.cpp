@@ -7,7 +7,7 @@ Mesh::Mesh(std::vector<Vertex> verts, std::vector<uint> inds)
 : vertices(verts), indices(inds) {}
 Mesh::Mesh(std::vector<Vertex> verts, std::vector<uint> inds, Material mat)
 : vertices(verts), indices(inds), material(mat) {}
-void Mesh::setupMesh(uint shaderProgram) {
+void Mesh::setupMesh() {
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
@@ -23,25 +23,19 @@ void Mesh::setupMesh(uint shaderProgram) {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
     glEnableVertexAttribArray(2);
     //glBindVertexArray(0);
-    material.locs[DIFFUSE_LOC] = glGetUniformLocation(shaderProgram, "material.diffuse");
-    material.locs[SPECULAR_LOC] = glGetUniformLocation(shaderProgram, "material.specular");
-    material.locs[SHININESS_LOC] = glGetUniformLocation(shaderProgram, "material.shininess");
-    glUniform1i(material.locs[DIFFUSE_LOC], 0);
-    glUniform1i(material.locs[SPECULAR_LOC], 1);
-    glUniform1f(material.locs[SHININESS_LOC], material.shininess);
+}
+void Mesh::setupMaterial(Shader shader) {
+    material.locs[DIFFUSE_LOC] = shader.getLoc("material.diffuse");
+    shader.setInt(material.locs[DIFFUSE_LOC], 0);
+    material.locs[SPECULAR_LOC] = shader.getLoc("material.specular");
+    shader.setInt(material.locs[SPECULAR_LOC], 1);
+    material.locs[SHININESS_LOC] = shader.getLoc("material.shininess");
+    shader.setFloat(material.locs[SHININESS_LOC], material.shininess);
 }
 void Mesh::draw() {
-    /*glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material.diffuse);
-    glUniform1i(material.locs[DIFFUSE_LOC], 0);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, material.specular);
-    glUniform1i(material.locs[SPECULAR_LOC], 1);
-    glUniform1f(material.locs[SHININESS_LOC], material.shininess);
-    glActiveTexture(GL_TEXTURE0);*/
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    //glBindVertexArray(0);
+    glBindVertexArray(0);
 }
 Mesh genCube(float width, float height, float depth) {
     std::vector<Vertex> vertices = {

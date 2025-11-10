@@ -3,8 +3,6 @@
 #include "model.hpp"
 #include <iostream>
 #include <string>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include "camera.hpp"
 #include "stb_image.h"
@@ -30,6 +28,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+#endif
     GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "Failed to create GLFW window\n";
@@ -37,6 +38,7 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetWindowSize(window,800,800);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD\n";
         return -1;
@@ -47,137 +49,146 @@ int main() {
 //shader setup
     std::string vertex_source = read_file("vs.vert");
     const char* vertex_code = vertex_source.c_str();
-    uint vs = compileShader(GL_VERTEX_SHADER, vertex_code);
     std::string fragment_source = read_file("fs.frag");
     const char* fragment_code = fragment_source.c_str();
-    uint fs = compileShader(GL_FRAGMENT_SHADER, fragment_code);
-    uint sp = setupProgram(vs, fs);
+    Shader shader(vertex_code, fragment_code);
     std::string fragment_source2 = read_file("fs2.frag");
     const char* fragment_code2 = fragment_source2.c_str();
-    uint fs2 = compileShader(GL_FRAGMENT_SHADER, fragment_code2);
-    uint sp2 = setupProgram(vs, fs2);
-//texture setup
+    Shader lightShader(vertex_code, fragment_code2);
+    std::string cube_vs_source = read_file("cubemap.vert");
+    const char* cube_vs_code = cube_vs_source.c_str();
+    std::string cube_fs_source = read_file("cubemap.frag");
+    const char* cube_fs_code = cube_fs_source.c_str();
+    Shader cubemapShader(cube_vs_code, cube_fs_code);
     stbi_set_flip_vertically_on_load(true);
-    /*glActiveTexture(GL_TEXTURE0);
-    uint texture = loadTexture("brick.png");
-    glActiveTexture(GL_TEXTURE1);
-    uint specMap = loadTexture("specMap.png");*/
 
 //mesh setup
-/*
-    float vertices[] = {
-        //positions             //normals            //tex coords
-         0.5f, -0.5f,  0.5f,     0.0f,  0.0f,  1.0f,    1.0f, 0.0f, //front
-         0.5f,  0.5f,  0.5f,     0.0f,  0.0f,  1.0f,    1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,     0.0f,  0.0f,  1.0f,    0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,     0.0f,  0.0f,  1.0f,    0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    1.0f, 0.0f, //back
-        -0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    0.5f, 1.0f,
-         0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,    0.5f, 0.0f,
-
-         0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,    1.0f, 0.0f, //top
-         0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,    1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,    0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,    0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,    1.0f, 0.0f, //bottom
-        -0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,    1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,    0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,    0.0f, 0.0f,
-
-         0.5f, -0.5f,  0.5f,     1.0f,  0.0f,  0.0f,    1.0f, 0.0f, //right
-         0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,     1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,    1.0f, 0.0f, //left
-        -0.5f,  0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,    1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,    0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,    0.0f, 0.0f,
-    };
-    uint indices[] = {
-         0,  1,  2,  0,  2,  3, //front
-         4,  5,  6,  4,  6,  7, //back
-         8,  9, 10,  8, 10, 11, //top
-        12, 13, 14, 12, 14, 15, //bottom
-        16, 17, 18, 16, 18, 19, //right
-        20, 21, 22, 20, 22, 23  //left
-    };
-    int iCount = 36;
-    uint vao, vbo, ebo;
-
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-*/
-    glUseProgram(sp);
-    /*Mesh cube = genCube(1, 1, 1);
-    cube.material.diffuse = texture;
-    cube.material.specular = specMap;
-    cube.material.shininess = 32.0f;
-    cube.setupMesh(sp);*/
+    shader.use();
     Model cube = loadModel("brick.obj");
-    cube.meshes[0].setupMesh(sp);
+    cube.meshes[0].setupMesh();
+    cube.meshes[0].setupMaterial(shader);
 
 //light setup
-    glUseProgram(sp);
-    uint lightTypeLoc = glGetUniformLocation(sp, "light.type");
-    glUniform1i(lightTypeLoc, 3);
-    uint lightPosLoc = glGetUniformLocation(sp, "light.position");
+    shader.setInt("light.type", 3);
     glm::vec3 lightPos(0, 2, 0);
-    glUniform3fv(lightPosLoc, 1, glm::value_ptr(lightPos));
-    uint lightDirLoc = glGetUniformLocation(sp, "light.direction");
+    int lightPosLoc = shader.getLoc("light.position");
+    shader.setVec3(lightPosLoc, lightPos);
+    int lightDirLoc = shader.getLoc("light.direction");
     glUniform3f(lightDirLoc, 0, -1, 0);
-    uint lightCutOffLoc = glGetUniformLocation(sp, "light.cutOff");
-    glUniform1f(lightCutOffLoc, glm::cos(glm::radians(15.f)));
-    uint lightOuterCutOffLoc = glGetUniformLocation(sp, "light.outerCutOff");
-    glUniform1f(lightOuterCutOffLoc, glm::cos(glm::radians(20.f)));
-    uint lightAmbientLoc = glGetUniformLocation(sp, "light.ambient");
-    glUniform3f(lightAmbientLoc, 0.5f, 0.5f, 0.5f);
-    uint lightDiffuseLoc = glGetUniformLocation(sp, "light.diffuse");
-    glUniform3f(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
-    uint lightSpecularLoc = glGetUniformLocation(sp, "light.specular");
-    glUniform3f(lightSpecularLoc, 0.5f, 0.5f, 0.5f);
-    uint lightConstantLoc = glGetUniformLocation(sp, "light.constant");
-    glUniform1f(lightConstantLoc, 1.0f);
-    uint lightLinearLoc = glGetUniformLocation(sp, "light.linear");
-    glUniform1f(lightLinearLoc, 0.09f);
-    uint lightQuadraticLoc = glGetUniformLocation(sp, "light.quadratic");
-    glUniform1f(lightQuadraticLoc, 0.032f);
-    uint viewPosLoc = glGetUniformLocation(sp, "viewPos");
+    int lightCutOffLoc = shader.getLoc("light.cutOff");
+    shader.setFloat(lightCutOffLoc, glm::cos(glm::radians(15.f)));
+    int lightOuterCutOffLoc = shader.getLoc("light.outerCutOff");
+    shader.setFloat(lightOuterCutOffLoc, glm::cos(glm::radians(20.f)));
+    int lightAmbientLoc = shader.getLoc("light.ambient");
+    shader.setVec3(lightAmbientLoc, 0.5f, 0.5f, 0.5f);
+    int lightDiffuseLoc = shader.getLoc("light.diffuse");
+    shader.setVec3(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
+    int lightSpecularLoc = shader.getLoc("light.specular");
+    shader.setVec3(lightSpecularLoc, 0.5f, 0.5f, 0.5f);
+    int lightConstantLoc = shader.getLoc("light.constant");
+    shader.setFloat(lightConstantLoc, 1.0f);
+    int lightLinearLoc = shader.getLoc("light.linear");
+    shader.setFloat(lightLinearLoc, 0.09f);
+    int lightQuadraticLoc = shader.getLoc("light.quadratic");
+    shader.setFloat(lightQuadraticLoc, 0.032f);
+    int viewPosLoc = shader.getLoc("viewPos");
 
 //matrix setup
-    uint modelLoc = glGetUniformLocation(sp, "model");
-    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(4, 0.1f, 4));
+    uint modelLoc = shader.getLoc("model");
+    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
     glm::mat4 identity = glm::mat4(1.0f);
-    uint viewLoc = glGetUniformLocation(sp, "view");
+    uint viewLoc = shader.getLoc("view");
     Camera camera(glm::vec3(4, 1, 5), glm::vec3(0.0f, 1.0f, 0.0f), pi/4.0f, glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4 proj = glm::perspective(camera.fov, 1.0f, 0.1f, 100.0f); 
-    uint projLoc = glGetUniformLocation(sp, "proj");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
-    glUseProgram(sp2);
+    shader.setMat4("proj", proj);
+    lightShader.use();
     glm::mat4 lightModel = glm::mat4(1.0f);
-    uint modelLoc2 = glGetUniformLocation(sp2, "model");
-    uint viewLoc2 = glGetUniformLocation(sp2, "view");
-    uint projLoc2 = glGetUniformLocation(sp2, "proj");
-    glUniformMatrix4fv(projLoc2, 1, GL_FALSE, glm::value_ptr(proj));
+    uint modelLoc2 = lightShader.getLoc("model");
+    uint viewLoc2 = lightShader.getLoc("view");
+    lightShader.setMat4("proj", proj);
 
+//cubemap
+    uint cubemap;
+    glGenTextures(1, &cubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+    std::string filenames[] = {
+        "front.png",
+        "back.png",
+        "right.png",
+        "left.png",
+        "top.png",
+        "bottom.png",
+    };
+    int w, h, nChan;
+    unsigned char* data;
+    for (int i = 0; i < 6; i++) {
+        data = stbi_load(filenames[i].c_str(), &w, &h, &nChan, 0);
+        glTexImage2D(
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+            0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
+        );
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+//skybox
+    float skyboxVerts[] = {
+         1, -1, -1,
+         1,  1, -1,
+        -1,  1, -1,
+        -1, -1, -1,
+
+        -1, -1,  1,
+        -1,  1,  1,
+         1,  1,  1,
+         1, -1,  1,
+
+         1, -1, -1,
+         1,  1, -1,
+         1,  1,  1,
+         1, -1,  1,
+
+        -1, -1,  1,
+        -1,  1,  1,
+        -1,  1, -1,
+        -1, -1, -1,
+
+        -1,  1, -1,
+        -1,  1,  1,
+         1,  1,  1,
+         1,  1, -1,
+
+        -1, -1,  1,
+        -1, -1, -1,
+         1, -1, -1,
+         1, -1,  1,
+    };
+    uint skyboxIndices[] = {
+         0,  1,  2,  0,  2,  3,
+         4,  5,  6,  4,  6,  7,
+         8,  9, 10,  8, 10, 11,
+        12, 13, 14, 12, 14, 15,
+        16, 17, 18, 16, 18, 19,
+        20, 21, 22, 20, 22, 23,
+    };
+    uint skyboxVbo, skyboxVao, skyboxEbo;
+    glGenVertexArrays(1, &skyboxVao);
+    glBindVertexArray(skyboxVao);
+    glGenBuffers(1, &skyboxVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVerts), skyboxVerts, GL_STATIC_DRAW);
+    glGenBuffers(1, &skyboxEbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), skyboxIndices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    cubemapShader.use();
+    cubemapShader.setMat4("proj", proj);
+    cubemapShader.setInt("cubemap", 0);
+    int cubemapViewLoc = cubemapShader.getLoc("view");
 //render loop
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -240,22 +251,33 @@ int main() {
             camera.yaw = fmod(camera.yaw, 360.0f);
             camera.updateVectors();
         }
-        glm::mat4 view = camera.getViewMatrix();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        glUseProgram(sp);
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniform3fv(lightPosLoc, 1, glm::value_ptr(lightPos));
-        glUniform3fv(viewPosLoc, 1, glm::value_ptr(camera.position));
-        //glBindVertexArray(vao);
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        //glDrawElements(GL_TRIANGLES, iCount, GL_UNSIGNED_INT, 0);
-        cube.draw();
-        glUseProgram(sp2);
-        lightModel = glm::translate(identity, lightPos) * glm::scale(identity, glm::vec3(0.1f));
-        glUniformMatrix4fv(modelLoc2, 1, GL_FALSE, glm::value_ptr(lightModel));
-        glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+        cubemapShader.use();
+        glm::mat4 view = glm::mat4(glm::mat3(camera.getViewMatrix()));  
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+        cubemapShader.setMat4(cubemapViewLoc, view);
+        glBindVertexArray(skyboxVao);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
+        
+        shader.use();
+        view = camera.getViewMatrix();
+        shader.setMat4(viewLoc, view);
+        shader.setVec3(lightPosLoc, lightPos);
+        shader.setVec3(viewPosLoc, camera.position);
+        shader.setMat4(modelLoc, model);
+        glBindTexture(GL_TEXTURE_2D, cube.meshes[0].material.diffuse);
+        cube.draw();
+
+        lightShader.use();
+        lightModel = glm::translate(identity, lightPos) * glm::scale(identity, glm::vec3(0.1f));
+        lightShader.setMat4(modelLoc2, lightModel);
+        lightShader.setMat4(viewLoc2, view);
+        cube.draw();
+        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
