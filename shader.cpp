@@ -1,6 +1,15 @@
 #include "shader.hpp"
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <fstream>
+std::string read_file(std::string filename) {
+    std::ifstream file(filename);
+    std::string output,read;
+    while (std::getline(file,read)) {
+        output += read + "\n";
+    }
+    return output;
+}
 uint compileShader(GLenum type, const char* source) {
     uint shader = glCreateShader(type);
     glShaderSource(shader, 1, &source, nullptr);
@@ -34,7 +43,9 @@ uint setupProgram(uint vs, uint fs) {
     glDeleteShader(fs);
     return program;
 }
-Shader::Shader(const char* vsCode, const char* fsCode) {
+Shader::Shader(std::string vsFilename, std::string fsFilename) {
+    std::string vsSrc = read_file(vsFilename), fsSrc = read_file(fsFilename);
+    const char *vsCode = vsSrc.c_str(), *fsCode = fsSrc.c_str();   
     vert = compileShader(GL_VERTEX_SHADER, vsCode);
     frag = compileShader(GL_FRAGMENT_SHADER, fsCode);
     program = setupProgram(vert, frag);

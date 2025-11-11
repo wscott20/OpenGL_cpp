@@ -2,19 +2,9 @@
 #include <GLFW/glfw3.h>
 #include "model.hpp"
 #include <iostream>
-#include <string>
-#include <fstream>
 #include "camera.hpp"
 #include "stb_image.h"
 #define pi 3.141592653589793f  
-std::string read_file(std::string filename) {
-    std::ifstream file(filename);
-    std::string output,read;
-    while (std::getline(file,read)) {
-        output += read + "\n";
-    }
-    return output;
-}
 void resize_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -47,19 +37,9 @@ int main() {
     glfwSetFramebufferSizeCallback(window, resize_callback);
 
 //shader setup
-    std::string vertex_source = read_file("vs.vert");
-    const char* vertex_code = vertex_source.c_str();
-    std::string fragment_source = read_file("fs.frag");
-    const char* fragment_code = fragment_source.c_str();
-    Shader shader(vertex_code, fragment_code);
-    std::string fragment_source2 = read_file("fs2.frag");
-    const char* fragment_code2 = fragment_source2.c_str();
-    Shader lightShader(vertex_code, fragment_code2);
-    std::string cube_vs_source = read_file("cubemap.vert");
-    const char* cube_vs_code = cube_vs_source.c_str();
-    std::string cube_fs_source = read_file("cubemap.frag");
-    const char* cube_fs_code = cube_fs_source.c_str();
-    Shader cubemapShader(cube_vs_code, cube_fs_code);
+    Shader  shader("vs.vert", "fs.frag"),
+            lightShader("vs.vert", "fs2.frag"),
+            cubemapShader("cubemap.vert", "cubemap.frag");
     stbi_set_flip_vertically_on_load(true);
 
 //mesh setup

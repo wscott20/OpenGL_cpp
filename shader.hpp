@@ -1,10 +1,11 @@
 #pragma once
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <string>
 using uint = unsigned int;
 struct Shader {
     uint vert, frag, program;
-    Shader(const char* vsCode, const char* fsCode);
+    Shader(std::string vsFilename, std::string fsFilename);
     void use();
     int getLoc(const char* name);
     void setInt(int loc, int value);
