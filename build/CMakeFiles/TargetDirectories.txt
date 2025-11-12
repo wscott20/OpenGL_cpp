@@ -1,6 +1,0 @@
-/Users/bbwscott3/Opengl_cpp/build/CMakeFiles/learnopengl.dir
-/Users/bbwscott3/Opengl_cpp/build/CMakeFiles/edit_cache.dir
-/Users/bbwscott3/Opengl_cpp/build/CMakeFiles/rebuild_cache.dir
-/Users/bbwscott3/Opengl_cpp/build/glad/CMakeFiles/glad.dir
-/Users/bbwscott3/Opengl_cpp/build/glad/CMakeFiles/edit_cache.dir
-/Users/bbwscott3/Opengl_cpp/build/glad/CMakeFiles/rebuild_cache.dir
