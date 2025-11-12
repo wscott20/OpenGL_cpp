@@ -39,7 +39,7 @@ int main() {
 //shader setup
     Shader  shader("vs.vert", "fs.frag"),
             lightShader("vs.vert", "fs2.frag"),
-            cubemapShader("cubemap.vert", "cubemap.frag");
+            hdrShader("hdr.vert", "hdr.frag");
     stbi_set_flip_vertically_on_load(true);
 
 //mesh setup
@@ -47,33 +47,74 @@ int main() {
     Model cube = loadModel("brick.obj");
     cube.meshes[0].setupMesh();
     cube.meshes[0].setupMaterial(shader);
+    float quadVerts[] = {
+         1, -1, 0,  1, 0,
+         1,  1, 0,  1, 1,
+        -1,  1, 0,  0, 1,
+        -1, -1, 0,  0, 0,
+    };
+    float quadIndices[] = {
+        0, 1, 2, 0, 2, 3,
+    };
+    uint quadVao, quadVbo, quadEbo;
+    glGenVertexArrays(1, &quadVao);
+    glBindVertexArray(quadVao);
+    glGenBuffers(1, &quadVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+    glGenBuffers(1, &quadEbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 //light setup
-    shader.setInt("light.type", 3);
+    shader.setInt("nLights", 1);
+    shader.setInt("lights[0].type", 3);
     glm::vec3 lightPos(0, 2, 0);
-    int lightPosLoc = shader.getLoc("light.position");
+    int lightPosLoc = shader.getLoc("lights[0].position");
     shader.setVec3(lightPosLoc, lightPos);
-    int lightDirLoc = shader.getLoc("light.direction");
-    glUniform3f(lightDirLoc, 0, -1, 0);
-    int lightCutOffLoc = shader.getLoc("light.cutOff");
-    shader.setFloat(lightCutOffLoc, glm::cos(glm::radians(15.f)));
-    int lightOuterCutOffLoc = shader.getLoc("light.outerCutOff");
-    shader.setFloat(lightOuterCutOffLoc, glm::cos(glm::radians(20.f)));
-    int lightAmbientLoc = shader.getLoc("light.ambient");
-    shader.setVec3(lightAmbientLoc, 0.5f, 0.5f, 0.5f);
-    int lightDiffuseLoc = shader.getLoc("light.diffuse");
-    shader.setVec3(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
-    int lightSpecularLoc = shader.getLoc("light.specular");
-    shader.setVec3(lightSpecularLoc, 0.5f, 0.5f, 0.5f);
-    int lightConstantLoc = shader.getLoc("light.constant");
-    shader.setFloat(lightConstantLoc, 1.0f);
-    int lightLinearLoc = shader.getLoc("light.linear");
-    shader.setFloat(lightLinearLoc, 0.09f);
-    int lightQuadraticLoc = shader.getLoc("light.quadratic");
-    shader.setFloat(lightQuadraticLoc, 0.032f);
+    shader.setVec3("lights[0].direction", 0, -1, 0);
+    shader.setFloat("lights[0].cutOff", glm::cos(glm::radians(15.f)));
+    shader.setFloat("lights[0].outerCutOff", glm::cos(glm::radians(20.f)));
+    shader.setVec3("lights[0].ambient", 0.1f, 0.1f, 0.1f);
+    shader.setVec3("lights[0].diffuse", 1.0f, 1.0f, 1.0f);
+    shader.setVec3("lights[0].specular", 0.5f, 0.5f, 0.5f);
+    shader.setFloat("lights[0].constant", 1.0f);
+    shader.setFloat("lights[0].linear", 0.09f);
+    shader.setFloat("lights[0].quadratic", 0.032f);
     int viewPosLoc = shader.getLoc("viewPos");
 
+//hdr setup
+    uint hdrfbo;
+    glGenFramebuffers(1, &hdrfbo);
+    uint colorbuffer;
+    glGenTextures(1, &colorbuffer);
+    glBindTexture(GL_TEXTURE_2D, colorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 800, 800, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glBindTexture(GL_TEXTURE_2D, 0);
+    uint rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo); 
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 800, 800);  
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrfbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorbuffer, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    hdrShader.use();
+    int hdrLoc = hdrShader.getLoc("hdr");
+    bool useHdr = false;
+    hdrShader.setInt("hdrBuffer", 0);
+    hdrShader.setFloat("exposure", 1);
+
 //matrix setup
+    shader.use();
     uint modelLoc = shader.getLoc("model");
     glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
     glm::mat4 identity = glm::mat4(1.0f);
@@ -87,88 +128,6 @@ int main() {
     uint viewLoc2 = lightShader.getLoc("view");
     lightShader.setMat4("proj", proj);
 
-//cubemap
-    uint cubemap;
-    glGenTextures(1, &cubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
-    std::string filenames[] = {
-        "front.png",
-        "back.png",
-        "right.png",
-        "left.png",
-        "top.png",
-        "bottom.png",
-    };
-    int w, h, nChan;
-    unsigned char* data;
-    for (int i = 0; i < 6; i++) {
-        data = stbi_load(filenames[i].c_str(), &w, &h, &nChan, 0);
-        glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-            0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
-        );
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-//skybox
-    float skyboxVerts[] = {
-         1, -1, -1,
-         1,  1, -1,
-        -1,  1, -1,
-        -1, -1, -1,
-
-        -1, -1,  1,
-        -1,  1,  1,
-         1,  1,  1,
-         1, -1,  1,
-
-         1, -1, -1,
-         1,  1, -1,
-         1,  1,  1,
-         1, -1,  1,
-
-        -1, -1,  1,
-        -1,  1,  1,
-        -1,  1, -1,
-        -1, -1, -1,
-
-        -1,  1, -1,
-        -1,  1,  1,
-         1,  1,  1,
-         1,  1, -1,
-
-        -1, -1,  1,
-        -1, -1, -1,
-         1, -1, -1,
-         1, -1,  1,
-    };
-    uint skyboxIndices[] = {
-         0,  1,  2,  0,  2,  3,
-         4,  5,  6,  4,  6,  7,
-         8,  9, 10,  8, 10, 11,
-        12, 13, 14, 12, 14, 15,
-        16, 17, 18, 16, 18, 19,
-        20, 21, 22, 20, 22, 23,
-    };
-    uint skyboxVbo, skyboxVao, skyboxEbo;
-    glGenVertexArrays(1, &skyboxVao);
-    glBindVertexArray(skyboxVao);
-    glGenBuffers(1, &skyboxVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVerts), skyboxVerts, GL_STATIC_DRAW);
-    glGenBuffers(1, &skyboxEbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), skyboxIndices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    cubemapShader.use();
-    cubemapShader.setMat4("proj", proj);
-    cubemapShader.setInt("cubemap", 0);
-    int cubemapViewLoc = cubemapShader.getLoc("view");
 //render loop
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -176,6 +135,7 @@ int main() {
     glm::vec2 mousePos;
     bool click = false;
     while (!glfwWindowShouldClose(window)) {
+    //input
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -231,24 +191,16 @@ int main() {
             camera.yaw = fmod(camera.yaw, 360.0f);
             camera.updateVectors();
         }
+    //render
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrfbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        cubemapShader.use();
-        glm::mat4 view = glm::mat4(glm::mat3(camera.getViewMatrix()));  
-        glDepthMask(GL_FALSE);
-        glDepthFunc(GL_LEQUAL);
-        cubemapShader.setMat4(cubemapViewLoc, view);
-        glBindVertexArray(skyboxVao);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
-        
         shader.use();
-        view = camera.getViewMatrix();
+        glm::mat4 view = camera.getViewMatrix();
         shader.setMat4(viewLoc, view);
         shader.setVec3(lightPosLoc, lightPos);
         shader.setVec3(viewPosLoc, camera.position);
         shader.setMat4(modelLoc, model);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cube.meshes[0].material.diffuse);
         cube.draw();
 
@@ -257,7 +209,15 @@ int main() {
         lightShader.setMat4(modelLoc2, lightModel);
         lightShader.setMat4(viewLoc2, view);
         cube.draw();
-        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        hdrShader.use();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        useHdr = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
+        hdrShader.setInt(hdrLoc, useHdr ? 1 : 0);
+        glBindVertexArray(quadVao);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorbuffer);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
