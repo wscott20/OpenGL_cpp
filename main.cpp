@@ -53,7 +53,7 @@ int main() {
         -1,  1, 0,  0, 1,
         -1, -1, 0,  0, 0,
     };
-    float quadIndices[] = {
+    uint quadIndices[] = {
         0, 1, 2, 0, 2, 3,
     };
     uint quadVao, quadVbo, quadEbo;
@@ -80,7 +80,7 @@ int main() {
     shader.setFloat("lights[0].cutOff", glm::cos(glm::radians(15.f)));
     shader.setFloat("lights[0].outerCutOff", glm::cos(glm::radians(20.f)));
     shader.setVec3("lights[0].ambient", 0.1f, 0.1f, 0.1f);
-    shader.setVec3("lights[0].diffuse", 1.0f, 1.0f, 1.0f);
+    shader.setVec3("lights[0].diffuse", 200,200,200);
     shader.setVec3("lights[0].specular", 0.5f, 0.5f, 0.5f);
     shader.setFloat("lights[0].constant", 1.0f);
     shader.setFloat("lights[0].linear", 0.09f);
@@ -111,7 +111,7 @@ int main() {
     int hdrLoc = hdrShader.getLoc("hdr");
     bool useHdr = false;
     hdrShader.setInt("hdrBuffer", 0);
-    hdrShader.setFloat("exposure", 1);
+    hdrShader.setFloat("exposure", .1f);
 
 //matrix setup
     shader.use();
@@ -131,7 +131,6 @@ int main() {
 //render loop
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glm::vec2 mousePos;
     bool click = false;
     while (!glfwWindowShouldClose(window)) {
@@ -193,6 +192,7 @@ int main() {
         }
     //render
         glBindFramebuffer(GL_FRAMEBUFFER, hdrfbo);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shader.use();
         glm::mat4 view = camera.getViewMatrix();
@@ -211,6 +211,7 @@ int main() {
         cube.draw();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         hdrShader.use();
+        glClearColor(0.1f, 0.0f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         useHdr = glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS;
         hdrShader.setInt(hdrLoc, useHdr ? 1 : 0);
