@@ -6,9 +6,9 @@
 #define MAX_LIGHTS 16
 
 in vec3 fragPos;
-in vec3 fragColor;
 in vec3 fragNorm;
 in vec2 fragTC;
+in mat3 tbn;
 
 struct Material {
     sampler2D diffuse;
@@ -31,6 +31,7 @@ struct Light {
 
 uniform Material material;
 uniform Light lights[MAX_LIGHTS];
+uniform sampler2D normMap;
 uniform int nLights;
 uniform vec3 viewPos;
 out vec4 color;
@@ -42,7 +43,8 @@ vec3 calcSpecular(vec3 norm, vec3 lightSpec, vec3 lightDir, vec3 viewDir) {
     return specMap * spec * lightSpec;
 }
 void main() {
-    vec3 norm = normalize(fragNorm);
+    vec3 nmap = normalize(texture(normMap, fragTC).rgb * 2.f - 1.f);
+    vec3 norm = normalize(tbn*nmap);
     vec3 albedo = texture(material.diffuse, fragTC).rgb;
     vec3 finalColor = vec3(0);
     for (int i = 0; i < nLights; i++) {
@@ -76,7 +78,8 @@ void main() {
                 }
             }
         }
-        finalColor += diffuse + specular;
+        finalColor += diffuse;// + specular;
     }
     color = vec4(finalColor, 1.0);
+    // color = vec4(norm/2+.5,1);
 }

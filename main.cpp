@@ -38,15 +38,32 @@ int main() {
 
 //shader setup
     Shader  shader("vs.vert", "fs.frag"),
-            lightShader("vs.vert", "fs2.frag"),
-            hdrShader("hdr.vert", "hdr.frag");
+            lightShader("vs.vert", "fs2.frag")/*,
+            hdrShader("hdr.vert", "hdr.frag")*/;
     stbi_set_flip_vertically_on_load(true);
 
 //mesh setup
     shader.use();
-    Model cube = loadModel("brick.obj");
-    cube.meshes[0].setupMesh();
-    cube.meshes[0].setupMaterial(shader);
+    Mesh cube = genCube(1,1,1);
+    cube.material.diffuse = loadTexture("brick.png");
+    cube.material.specular = loadTexture("specMap2.png");
+    cube.setupMaterial(shader);
+    shader.setInt("normMap",2);
+    glActiveTexture(GL_TEXTURE2);
+    uint normMap;
+    glGenTextures(1, &normMap);
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load("brickNorm.png", &width, &height, &nrComponents, 3);
+    if (data) {
+        glBindTexture(GL_TEXTURE_2D, normMap);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else std::cerr << "Normal map failed to load" << std::endl;
+    stbi_image_free(data);
     float quadVerts[] = {
          1, -1, 0,  1, 0,
          1,  1, 0,  1, 1,
@@ -72,23 +89,24 @@ int main() {
 
 //light setup
     shader.setInt("nLights", 1);
-    shader.setInt("lights[0].type", 3);
+    shader.setInt("lights[0].type", 1);
     glm::vec3 lightPos(0, 2, 0);
-    int lightPosLoc = shader.getLoc("lights[0].position");
-    shader.setVec3(lightPosLoc, lightPos);
-    shader.setVec3("lights[0].direction", 0, -1, 0);
-    shader.setFloat("lights[0].cutOff", glm::cos(glm::radians(15.f)));
-    shader.setFloat("lights[0].outerCutOff", glm::cos(glm::radians(20.f)));
+    //int lightPosLoc = shader.getLoc("lights[0].position");
+    //shader.setVec3(lightPosLoc, lightPos);
+    int dirLoc = shader.getLoc("lights[0].direction");
+    shader.setVec3(dirLoc, 0, -1, 0);
     shader.setVec3("lights[0].ambient", 0.1f, 0.1f, 0.1f);
-    shader.setVec3("lights[0].diffuse", 200,200,200);
+    shader.setVec3("lights[0].diffuse", 1.0f, 1.0f, 1.0f);
     shader.setVec3("lights[0].specular", 0.5f, 0.5f, 0.5f);
-    shader.setFloat("lights[0].constant", 1.0f);
-    shader.setFloat("lights[0].linear", 0.09f);
-    shader.setFloat("lights[0].quadratic", 0.032f);
+    //shader.setFloat("lights[0].cutOff", glm::cos(glm::radians(15.f)));
+    //shader.setFloat("lights[0].outerCutOff", glm::cos(glm::radians(20.f)));
+    //shader.setFloat("lights[0].constant", 1.0f);
+    //shader.setFloat("lights[0].linear", 0.09f);
+    //shader.setFloat("lights[0].quadratic", 0.032f);
     int viewPosLoc = shader.getLoc("viewPos");
 
 //hdr setup
-    uint hdrfbo;
+    /*uint hdrfbo;
     glGenFramebuffers(1, &hdrfbo);
     uint colorbuffer;
     glGenTextures(1, &colorbuffer);
@@ -112,12 +130,13 @@ int main() {
     bool useHdr = false;
     hdrShader.setInt("hdrBuffer", 0);
     hdrShader.setFloat("exposure", .1f);
+    hdrShader.setInt("gammaCorrection", false);*/
 
 //matrix setup
-    shader.use();
+    //shader.use();
     uint modelLoc = shader.getLoc("model");
-    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
     glm::mat4 identity = glm::mat4(1.0f);
+    glm::mat4 model = identity;//glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
     uint viewLoc = shader.getLoc("view");
     Camera camera(glm::vec3(4, 1, 5), glm::vec3(0.0f, 1.0f, 0.0f), pi/4.0f, glm::vec3(0.0f, 0.0f, 0.0f));
     glm::mat4 proj = glm::perspective(camera.fov, 1.0f, 0.1f, 100.0f); 
@@ -163,11 +182,11 @@ int main() {
             lightPos.x += 0.05f;
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
             camera.position.y += 0.05f;
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
             lightPos.y += 0.05f;
         if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
             camera.position.y -= 0.05f;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
             lightPos.y -= 0.05f;
         bool isClick = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         if (isClick && !click) {
@@ -191,17 +210,18 @@ int main() {
             camera.updateVectors();
         }
     //render
-        glBindFramebuffer(GL_FRAMEBUFFER, hdrfbo);
+        //glBindFramebuffer(GL_FRAMEBUFFER, hdrfbo);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shader.use();
         glm::mat4 view = camera.getViewMatrix();
+        shader.setVec3(dirLoc,glm::normalize(-lightPos));
         shader.setMat4(viewLoc, view);
-        shader.setVec3(lightPosLoc, lightPos);
+        //shader.setVec3(lightPosLoc, lightPos);
         shader.setVec3(viewPosLoc, camera.position);
         shader.setMat4(modelLoc, model);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cube.meshes[0].material.diffuse);
+        glBindTexture(GL_TEXTURE_2D, cube.material.diffuse);
         cube.draw();
 
         lightShader.use();
@@ -209,7 +229,7 @@ int main() {
         lightShader.setMat4(modelLoc2, lightModel);
         lightShader.setMat4(viewLoc2, view);
         cube.draw();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        /*glBindFramebuffer(GL_FRAMEBUFFER, 0);
         hdrShader.use();
         glClearColor(0.1f, 0.0f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -218,7 +238,7 @@ int main() {
         glBindVertexArray(quadVao);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colorbuffer);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);*/
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
