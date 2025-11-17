@@ -50,7 +50,7 @@ int main() {
     cube.setupMaterial(shader);
     shader.setInt("normMap",2);
     glActiveTexture(GL_TEXTURE2);
-    uint normMap;
+    uint normMap; //= loadTexture("brickNorm.png");
     glGenTextures(1, &normMap);
     int width, height, nrComponents;
     unsigned char *data = stbi_load("brickNorm.png", &width, &height, &nrComponents, 3);
@@ -64,7 +64,7 @@ int main() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else std::cerr << "Normal map failed to load" << std::endl;
     stbi_image_free(data);
-    float quadVerts[] = {
+    /*float quadVerts[] = {
          1, -1, 0,  1, 0,
          1,  1, 0,  1, 1,
         -1,  1, 0,  0, 1,
@@ -85,7 +85,7 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));*/
 
 //light setup
     shader.setInt("nLights", 1);

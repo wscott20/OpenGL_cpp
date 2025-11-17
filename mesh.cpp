@@ -54,9 +54,9 @@ void Mesh::setupMaterial(Shader shader) {
     material.locs[SHININESS_LOC] = shader.getLoc("material.shininess");
     shader.setFloat(material.locs[SHININESS_LOC], material.shininess);
 }
-void Mesh::draw(GLenum primType) {
+void Mesh::draw() {
     glBindVertexArray(vao);
-    glDrawElements(primType, indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 Mesh genCube(float width, float height, float depth, AttribLocMap locs) {
